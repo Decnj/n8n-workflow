@@ -1,0 +1,232 @@
+{
+  "name": "Gmail Attachment Organizer",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "81ba044a-d397-40fc-a55d-e6a9480518dc",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "019uiO199WNUtcF5",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst output = [];\n\nfor (const [key, attachment] of Object.entries(item.binary)) {\n  output.push({\n    json: {\n      attachmentKey: key,\n      mimeType: attachment.mimeType,\n      fileName: attachment.fileName || attachment.fileName,\n    },\n    binary: {\n      data: attachment,\n    },\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "7a92fd3e-c481-49d2-a419-28c512fd5194",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mimeType.startsWith('image/') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "82d810b0-0595-4af2-bd1d-5870cb8ec3f5"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "aeb3a006-9e78-43e0-84e3-1597a7fe0cfc",
+                    "leftValue": "={{ $json.mimeType}}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "08861a1c-3f70-4c29-b053-a1d6c0befeef",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.fileName}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "15cxSm5g5lbv8t3va66zU93YUN7AQdsft",
+          "mode": "list",
+          "cachedResultName": "n8n-test-images",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15cxSm5g5lbv8t3va66zU93YUN7AQdsft"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        -192
+      ],
+      "id": "f094595c-07d0-4b41-ba9c-c24cf6417ae4",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Nqo8WTuH2asuQ60i",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1qu3oMeK3xwSAuUF2aUxodx2VQzl6hwhD",
+          "mode": "list",
+          "cachedResultName": "n8n-test-documents",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1qu3oMeK3xwSAuUF2aUxodx2VQzl6hwhD"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        704,
+        32
+      ],
+      "id": "7bcc4095-727f-4c5c-8c84-65eaee232cfe",
+      "name": "Upload file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Nqo8WTuH2asuQ60i",
+          "name": "Google Drive account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ea11a198-efcf-42e1-97a8-2f32860ae638",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "acb95b8a1363c46467d0e01d3e96c46e732116433df1f0157169aa03ec68ed6a"
+  },
+  "nodeGroups": [],
+  "id": "cz7gfyGg42LCe1BX",
+  "tags": []
+}
