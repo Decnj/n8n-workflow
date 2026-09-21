@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+*.log
+
+# n8n local data
+.n8n/
