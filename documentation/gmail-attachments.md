@@ -74,4 +74,5 @@ Google Drive  Google Drive
 
 The workflow successfully separates image and PDF attachments and uploads them to their respective Google Drive folders automatically.
 
-![Workflow](media/gmail-attachment-organizer.png)
+![Workflow](../media/gmail-attachment-organizer.png)
+![Diagram](../media/gmail-attachment-organizer.mov)
