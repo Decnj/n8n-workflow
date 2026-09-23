@@ -1,0 +1,239 @@
+{
+  "name": "Webhook Lead Formatter",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "1806c5d0-3c6a-4bb9-96b5-d6032a1ceb7c",
+      "name": "Webhook",
+      "webhookId": "3ec37b75-3f72-4252-a1dd-ad118727270d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4ef23511-8ec8-4068-93c9-8cbdef3a365f",
+              "name": "first_name",
+              "value": "={{ $json.body.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "56a72d48-76d8-4ee9-a8bb-7d37971446c3",
+              "name": "surname",
+              "value": "={{ $json.body.surname }}",
+              "type": "string"
+            },
+            {
+              "id": "f72f159c-efcf-4e23-ab80-2a5e5577bb5f",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "f1db2bd1-624b-4e04-948c-1ca5b6820cdc",
+              "name": "phone",
+              "value": "={{ $json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "a4c17e3c-e736-473b-a8dc-b48da359ba4a",
+              "name": "company",
+              "value": "={{ $json.body.company }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        64,
+        0
+      ],
+      "id": "caf69617-6f8e-4285-ab77-7f61fbcad955",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "960a1642-c3f4-4368-8a71-378087ae4c01",
+              "leftValue": "={{ $json.first_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "1d088929-1088-4ea4-803d-d22988926656",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c5ba1290-f942-4d74-a1d8-1bad4c2e8c2c",
+              "leftValue": "={{ $json.company }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        256,
+        0
+      ],
+      "id": "c15a8001-54fd-4561-a369-4dd37076e85c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        688,
+        -176
+      ],
+      "id": "dc718606-ca60-4d35-9fed-2e17d3780921",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Validation Failed\n\nLead submission could not be processed because one or more required fields are missing.\n\nRequired fields:\n- first_name\n- email\n- company\n\nPlease verify and resubmit the request with all mandatory fields included..",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        496,
+        144
+      ],
+      "id": "8cdfd1b2-267e-4e2f-ab61-d846544db8a5",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"status\":\"Success\",\n  \"message\":\"Lead Accepted\"\n}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        496,
+        -176
+      ],
+      "id": "706ccc0f-0b42-47c0-b97b-bd06ce450c59",
+      "name": "Edit Fields1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "757f4f22-9ce4-405c-a4b9-0e027b49c283",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "acb95b8a1363c46467d0e01d3e96c46e732116433df1f0157169aa03ec68ed6a"
+  },
+  "nodeGroups": [],
+  "id": "lymZJx3Uj4vAqifu",
+  "tags": []
+}
