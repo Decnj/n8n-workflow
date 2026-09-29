@@ -1,0 +1,451 @@
+{
+  "name": "CSV File Cleaner",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1b0AKwVMQl_FRsBB-0dd3s1X4seshL2xK",
+          "mode": "list",
+          "cachedResultName": "n8n-raw-csv",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1b0AKwVMQl_FRsBB-0dd3s1X4seshL2xK"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        32
+      ],
+      "id": "563ffaa3-7147-4807-a8c7-23ff84c1db88",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dRIfPT4ZqUEbQFt7",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -256,
+        32
+      ],
+      "id": "76b284c5-f80f-4aa7-b409-31353c2ae87c",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dRIfPT4ZqUEbQFt7",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -112,
+        -224
+      ],
+      "id": "f2490153-bf85-45ae-9b1f-41ae3b53a48f",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d8414764-2b64-43de-8e1e-db8395143826",
+              "name": "Name",
+              "value": "={{ $json.Name.trim().toLowerCase().split(' ').map(name => name.charAt(0).toUpperCase() + name.slice(1)).join(' ')}}",
+              "type": "string"
+            },
+            {
+              "id": "fcbde0a8-a1cf-44d2-adc3-f053f414216a",
+              "name": "Email",
+              "value": "={{ $json.Email.trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "88096937-8c6d-41bf-9f87-4d996aadd28a",
+              "name": "Department",
+              "value": "={{ $json.Department.trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "={{ true }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        64,
+        -224
+      ],
+      "id": "55635862-a496-4b0d-934e-a34238b62b11",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7ce7e0e6-accc-4f2c-856c-d544dacf973c",
+              "leftValue": "={{ $json.Name || $json.Email || $json.Department }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        80,
+        0
+      ],
+      "id": "3382c666-1152-49f1-9516-482075e01769",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d18ec6e5-3f3d-439a-af03-a2cbf8e26688",
+              "leftValue": "={{ /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/.test($json.Email) && !$json.Email.includes('..') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        320,
+        -176
+      ],
+      "id": "e168c842-0925-4891-a9be-078d3d9c0e1b",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "386be6f3-d0c1-4e3e-949f-03df0c053c24",
+              "name": "Rejection Reason",
+              "value": "Invalid Email Format ",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        512,
+        64
+      ],
+      "id": "479e853b-f661-46d5-afc7-d6ea98c3ebb3",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "=data",
+        "options": {
+          "fileName": "={{ 'rejected_emails_' + $now.format('yyyy-MM-dd_HH-mm') + '.csv' }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        64
+      ],
+      "id": "df6a2aab-b655-4fad-8c73-8b9625712da8",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1l17fFW1Z9Xr7DPvC-jwEdmPkA4uIMjuN",
+          "mode": "list",
+          "cachedResultName": "n8n-rejected-csv",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1l17fFW1Z9Xr7DPvC-jwEdmPkA4uIMjuN"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        64
+      ],
+      "id": "2e427ed3-84d4-4b07-9b4e-52d5cd398315",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dRIfPT4ZqUEbQFt7",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "compare": "allFieldsExcept",
+        "fieldsToExclude": "={{ $json.Department }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -192
+      ],
+      "id": "b0989db0-dbaa-4816-8eca-41038ec9e577",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "={{ 'cleaned_csv_' + $now.format('yyyy-MM-dd_HH-mm') + '.csv' }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        -192
+      ],
+      "id": "bce93990-e1b2-4efc-bad0-ed6c9976f260",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1lRKA7xIp7BxoDbQ7_8d882Pfd-_4M72r",
+          "mode": "list",
+          "cachedResultName": "n8n-clean-csv",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1lRKA7xIp7BxoDbQ7_8d882Pfd-_4M72r"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        -192
+      ],
+      "id": "d04fb5d5-8b68-4c78-bb2c-dc62cc369183",
+      "name": "Upload file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dRIfPT4ZqUEbQFt7",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Upload file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "987e659a-9872-48f6-821c-7b42fc7554ce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7e96970d0ae627d3cfe54f7ea6f1f80cc580395b9f9a12627d30df731cddc46e"
+  },
+  "nodeGroups": [],
+  "id": "4ODGQ3yVa2KjmZcf",
+  "tags": []
+}
