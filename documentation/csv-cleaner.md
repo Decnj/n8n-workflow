@@ -37,26 +37,26 @@ The workflow demonstrates core n8n concepts including file processing, data tran
 
 ```text
 Google Drive Trigger
-↓
+       ↓
 Download File
-↓
+       ↓
 Extract CSV
-↓
+       ↓
 Clean Fields
-↓
+       ↓
 IF Empty Row Check
-↓
+       ↓
 IF Email Validation
-┌──────────┴──────────┐
-│ │
-Valid Email Invalid Email
-│ │
-Remove Duplicates Add Rejection Reason
-(By Email) │
-│ │
-Convert to CSV Convert to CSV
-│ │
-Upload Clean CSV Upload Rejected CSV
+   ┌──────────┴──────────┐
+   │                     │
+Valid Email        Invalid Email
+   │                     │
+Remove Duplicates  Add Rejection Reason
+(By Email)               │
+   │                     │
+Convert to CSV     Convert to CSV
+   │                     │
+Upload Clean CSV   Upload Rejected CSV
 ```
 
 ---
