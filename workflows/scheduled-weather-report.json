@@ -1,0 +1,292 @@
+{
+  "name": "Scheduled Weather Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        -96
+      ],
+      "id": "ba9ae0bf-84b0-4104-b14c-0cbffdc1c395",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.openweathermap.org/data/2.5/weather",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openWeatherMapApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q"
+            },
+            {
+              "name": "units",
+              "value": "metric"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        96,
+        -96
+      ],
+      "id": "5ab0d1b2-7670-4bca-8b09-f7664cac61cb",
+      "name": "HTTP Request",
+      "retryOnFail": false,
+      "credentials": {
+        "openWeatherMapApi": {
+          "id": "03AXCbwDsUEnVhle",
+          "name": "OpenWeatherMap account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9e13a8f4-dd0a-456a-af8f-50680ddb75b0",
+              "name": "Temperature",
+              "value": "={{ $json.main.temp }}",
+              "type": "number"
+            },
+            {
+              "id": "780c7bf1-15a3-46f8-b71a-997fa8710d0e",
+              "name": "Feels_Like",
+              "value": "={{ $json.main.feels_like }}",
+              "type": "number"
+            },
+            {
+              "id": "9c5dc078-2710-45ca-8c3d-f8fa5bf4549c",
+              "name": "Humidity",
+              "value": "={{ $json.main.humidity }}",
+              "type": "number"
+            },
+            {
+              "id": "2fbd705d-c2cb-4f93-9183-7ff5076e0173",
+              "name": "Main_Condition",
+              "value": "={{ $json.weather[0].main }}",
+              "type": "string"
+            },
+            {
+              "id": "96cf562b-e145-4267-9421-20d66c9ab510",
+              "name": "Condition",
+              "value": "={{ $json.weather[0].description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        544,
+        -192
+      ],
+      "id": "624b66c6-4ed0-487f-996d-a67da3f9c954",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "48ab6a9f-60fe-4417-92cd-d0e0469c8b9e",
+              "name": "Suggestion",
+              "value": "={{\n$json.Condition.toLowerCase().includes('heavy rain')\n? 'Heavy rain expected. Avoid unnecessary travel.'\n: $json.Condition.toLowerCase().includes('light rain')\n? 'Carry an umbrella.'\n: $json.Main_Condition === 'Rain'\n? 'Carry an umbrella.'\n: $json.Main_Condition === 'Clear'\n? 'Enjoy your day.'\n: $json.Main_Condition === 'Clouds'\n? 'Weather looks pleasant. Have a great day.'\n: 'Have a wonderful day.'\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        768,
+        -192
+      ],
+      "id": "344987a3-f8d9-4046-878e-7d4af89b6952",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "sendTo": "john.doe01user@gmail.com",
+        "subject": "Daily Weather Report",
+        "emailType": "text",
+        "message": "=Good Morning, \n\nToday's Weather Report:\n\nTemperature: {{$json.Temperature}}°C \nFeels Like: {{$json.Feels_Like}}°C \nHumidity: {{$json.Humidity}}% \nConditions: {{$json.Condition}} \nSuggestion: {{$json.Suggestion}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        -192
+      ],
+      "id": "e467ef86-49f0-433e-a56d-69b98fbfe65b",
+      "name": "Send a message",
+      "webhookId": "a0b12b95-3986-4eb6-84da-ecc44e5e23e4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MwpcuiBN0sSzaiwS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1248ae39-b137-4343-bdf3-c8215070c8cc",
+              "leftValue": "={{ $json.main !== undefined }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        320,
+        -96
+      ],
+      "id": "ac589942-d640-47e9-bad1-2a334393c092",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "john.doe01user@gmail.com",
+        "subject": "Weather Report Unavailable",
+        "emailType": "text",
+        "message": "Good Morning, Weather report unavailable. The OpenWeatherMap API request failed or returned invalid data. Please check the API configuration and try again later.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        0
+      ],
+      "id": "540ee3b8-08df-4290-bac4-96aa95da08e0",
+      "name": "Send a message1",
+      "webhookId": "4d471937-e2e5-4099-a5e1-4eaff8c19d99",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MwpcuiBN0sSzaiwS",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c9b33c4c-e4f8-446a-abd1-ebe95ef924e6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7e96970d0ae627d3cfe54f7ea6f1f80cc580395b9f9a12627d30df731cddc46e"
+  },
+  "nodeGroups": [],
+  "id": "KSLCNTgjHw73jSCU",
+  "tags": []
+}
