@@ -1,289 +1,356 @@
-# Webhook Lead Formatter
+# Webhook Lead Formatter 
+
+## Workflow Name 
+
+Webhook Lead Formatter 
+
+--- 
+
+## Workflow Objective 
+
+This workflow receives lead information through an HTTP POST webhook endpoint, validates required fields, verifies email format using a regular expression, checks for duplicate leads using Google Sheets, stores valid leads, and returns an appropriate response to the sender. 
+
+The workflow demonstrates core n8n concepts including:  
+
+- Webhooks 
+- HTTP POST requests 
+- Data transformation 
+- Field mapping 
+- Conditional logic 
+- Email validation 
+- Google Sheets integration 
+- Duplicate detection 
+- Error handling 
+- API responses 
+
+--- 
+
+## Workflow Logic 
+
+1. A Webhook node receives incoming lead submissions. 
+2. An Edit Fields node standardises incoming data into a consistent structure. 
+3. An IF node validates that required fields are present: 
+   - first_name 
+   - email 
+   - company 
+4. A second IF node validates the email format using a regex expression. 
+5. A Google Sheets node searches for an existing lead using the submitted email address. 
+6. A third IF node checks whether the email already exists: 
+   - If found, the workflow returns a duplicate lead response. 
+   - If not found, the lead is saved to Google Sheets. 
+7. A response is returned to the requesting application. 
+
+--- 
+
+## Workflow Design 
+
+```text 
 
-## Workflow Name
+Webhook (POST) 
+      ↓ 
+Edit Fields 
+      ↓ 
+IF 
+(Required Field Validation) 
+      ↓ 
+IF 
+(Email Regex Validation) 
+      ↓ 
+Get Row(s) In Google Sheet 
+      ↓ 
+IF 
+(Email Exists?) 
 
-Webhook Lead Formatter
+  ├─ TRUE 
+  │     ↓ 
+  │ Lead Already Exists 
+  │     ↓ 
+  │ Respond to Webhook 
+  │ 
+  └─ FALSE 
+        ↓ 
+   Append Row 
+        ↓ 
+   Lead Saved 
 
----
+``` 
+--- 
 
-## Workflow Objective
+## Workflow Components 
 
-This workflow receives lead information through an HTTP POST webhook endpoint, validates required fields, standardises the incoming data structure, and returns a success or error response to the sender.
+### 1. Webhook (POST) 
 
-The workflow demonstrates core n8n concepts including webhooks, data transformation, conditional logic, validation, and API responses.
+The workflow begins with a Webhook node configured to receive HTTP POST requests. 
 
----
+Configuration: 
 
-## Workflow Logic
+- Method: POST 
+- Path: `/lead` 
+ 
+This acts as the entry point for incoming lead submissions. 
 
-1. A Webhook node receives incoming lead submissions via an HTTP POST request.
-2. An Edit Fields node extracts and standardises the incoming lead information.
-3. An IF node validates that all required fields are present:
-   - First Name
-   - Email Address
-   - Company Name
-4. If validation succeeds, the workflow generates a success response.
-5. If validation fails, the workflow generates an error response.
-6. A Respond to Webhook node returns the appropriate JSON response to the requesting client.
+Example payload: 
 
----
+```json 
+{ 
+  "first_name": "Sarah", 
+  "surname": "Doe", 
+  "email": "sarah@example.com", 
+  "phone": "+41-333-333-333", 
+  "company": "ABC Logistics" 
+} 
 
-## Workflow Design
+``` 
+--- 
 
-```text
-Webhook (POST)
-      ↓
-Edit Fields
-      ↓
-IF
-(first_name exists
-AND
-email exists
-AND
-company exists)
+### 2. Edit Fields (Manual Mapping) 
 
-TRUE
- ↓
-Edit Fields (Success Message)
- ↓
-Respond to Webhook
+The Edit Fields node standardises incoming webhook data into a predictable structure. 
 
-FALSE
- ↓
-Respond to Webhook (Error Message)
-```
+| Field | Source | 
+|---------|---------| 
+| first_name | `$json.body.first_name` | 
+| surname | `$json.body.surname` | 
+| email | `$json.body.email` | 
+| phone | `$json.body.phone` | 
+| company | `$json.body.company` | 
 
----
+Example output: 
 
-## Workflow Components
+```json 
+{ 
+  "first_name": "John", 
+  "surname": "Doe", 
+  "email": "john.doe@example.com", 
+  "phone": "+41333333333", 
+  "company": "ABC Ltd" 
+} 
 
-### 1. Webhook (POST)
+``` 
+--- 
 
-The workflow begins with a Webhook node configured to accept HTTP POST requests.
+### 3. Required Field Validation 
 
-This node serves as the entry point for incoming lead submissions.
+The first IF node checks that the following fields are present: 
 
-Example payload:
+- first_name 
+- email 
+- company 
 
-```json
-{
-  "first_name": "Sarah",
-  "surname": "Doe",
-  "email": "sarah@example.com",
-  "phone": "+41-333-333-333",
-  "company": "ABC Logistics"
-}
-```
+All validation checks must pass before processing continues. 
+Validation logic implemented using AND conditions.
 
----
+--- 
 
-### 2. Edit Fields (Manual Mapping)
+### 4. Email Format Validation 
 
-The Edit Fields node uses Manual Mapping mode to standardise incoming lead data from the webhook payload.
+The second IF node validates the submitted email address using a regular expression.  
 
-Incoming fields from the webhook request body are mapped into a consistent structure used throughout the remainder of the workflow.
+Accepted examples: 
 
-Configured mappings:
+```text 
+john@example.com 
+john.doe@example.com 
+user123@company.org 
+``` 
 
-| Field | Source |
-|---------|---------|
-| first_name | `$json.body.first_name` |
-| surname | `$json.body.surname` |
-| email | `$json.body.email` |
-| phone | `$json.body.phone` |
-| company | `$json.body.company` |
+Rejected examples: 
 
-Example output:
+```text 
+john@ 
+example.com 
+john..doe@example.com 
 
-```json
-{
-  "first_name": "John",
-  "surname": "Doe",
-  "email": "john.doe@example.com",
-  "phone": "+41-333-333-333",
-  "company": "ABC Ltd"
-}
-```
+```  
 
-Using Manual Mapping ensures all incoming lead submissions conform to a predictable structure before validation is performed.
+If validation fails, the workflow returns: 
 
----
+```json 
+{ 
+  "status": "error", 
+  "message": "Invalid email format" 
+} 
 
-### 3. IF Node
+``` 
+--- 
 
-The IF node performs validation checks against required fields.
+### 5. Duplicate Lead Detection 
 
-Validation Rules:
+The Google Sheets node performs a lookup using the submitted email address. 
 
-```text
-first_name exists
-AND
-email exists
-AND
-company exists
-```
+Lookup rule: 
 
-All three conditions must be satisfied before the lead is accepted.
+```text 
+email = submitted email 
+``` 
 
----
+The workflow searches the Google Sheet for an existing record matching the incoming email. 
 
-### 4. Edit Fields (Success Response)
+If a matching record exists: 
 
-If validation succeeds, a success response object is created.
+```json 
+{ 
+  "status": "Failed", 
+  "message": "Lead already exists" 
+} 
+``` 
+The lead is not saved again. 
 
-Example:
+--- 
+ 
+### 6. Google Sheets Storage 
 
-```json
-{
-  "status": "success",
-  "message": "Lead accepted"
-}
-```
+If no matching email is found:  
 
----
+- first_name 
+- surname 
+- email 
+- phone 
+- company 
 
-### 5. Respond to Webhook (Success)
+are appended to the Google Sheet. 
+This creates a persistent lead database and prevents duplicate entries. 
 
-Returns a success response to the calling application.
+--- 
 
-Example response:
+## Response Behaviour 
 
-```json
-{
-  "status": "success",
-  "message": "Lead accepted"
-}
-```
+### Valid Lead 
 
----
+When all validation checks pass and no duplicate email exists: 
 
-### 6. Respond to Webhook (Error)
+```json 
+{ 
+  "status": "success", 
+  "message": "Lead accepted" 
+} 
 
-If validation fails, the workflow follows the negative branch and returns a plain text error message to the sender.
+``` 
+--- 
 
-Response:
+### Duplicate Lead 
 
-```text
-Validation Failed
+Returned when a matching email already exists in the sheet: 
 
-Lead submission could not be processed because one or more required fields are missing.
+```json 
+{ 
+  "status": "Failed", 
+  "message": "Lead already exists" 
+} 
 
-Required fields:
-- first_name
-- email
-- company
+``` 
+--- 
 
-Please verify and resubmit the request with all mandatory fields included..
-```
+### Invalid Email 
 
-This provides immediate feedback to the requesting application and indicates which fields are required for successful processing.
+Returned when regex validation fails: 
 
----
+```json 
+{ 
+  "status": "error", 
+  "message": "Invalid email format" 
+} 
 
-## Nodes Used
+``` 
+--- 
 
-| Node | Purpose |
-|--------|---------|
-| Webhook (POST) | Receives incoming lead submissions |
-| Edit Fields (Manual Mapping) | Maps incoming webhook fields into a standardised lead structure |
-| IF | Validates required lead fields |
-| Edit Fields (Success) | Creates a successful validation response |
-| Respond to Webhook (Success) | Returns successful processing confirmation |
-| Respond to Webhook (Error) | Returns a plain text validation error message |
+### Missing Required Fields 
 
----
+Returned when one or more mandatory fields are missing: 
 
-## Assumptions
+```text 
+Validation Failed 
+ 
+Lead submission could not be processed because one or more required fields are missing. 
 
-- Lead submissions are sent as JSON payloads.
-- Required fields are:
-  - First Name
-  - Email Address
-  - Company Name
-- Surname and Phone Number are optional.
-- The workflow is tested using sandbox data only.
-- No production systems or live customer data were used.
+Required fields: 
+- first_name 
+- email 
+- company 
 
----
+Please verify and resubmit the request with all mandatory fields included. 
 
-## Sample Test Payload
+``` 
+--- 
 
-```json
-{
-  "first_name": "John",
-  "surname": "Doe",
-  "email": "john,doe@example.com",
-  "phone": "+41-333-333-333",
-  "company": "ABC Ltd"
-}
-```
+## Google Sheet Structure 
 
----
+The workflow stores lead information using the following columns:  
 
-## Testing Performed
+| Column | 
+|----------| 
+| first_name | 
+| surname | 
+| email | 
+| phone | 
+| company | 
 
-| Test Case | Expected Result | Status |
-|------------|----------------|---------|
-| Valid lead submission | Lead accepted and success response returned | ✅ Pass |
-| Missing email field | Lead rejected and error response returned | ✅ Pass |
-| Missing first name field | Lead rejected and error response returned | ✅ Pass |
-| Missing company field | Lead rejected and error response returned | ✅ Pass |
-| Optional phone field omitted | Lead accepted | ✅ Pass |
-| Optional surname field omitted | Lead accepted | ✅ Pass |
-| Additional fields included | Extra fields ignored | ✅ Pass |
+---  
 
----
+## Sample Test Payload 
 
-## Testing Method
+```json 
+{ 
+  "first_name": "John", 
+  "surname": "Doe", 
+  "email": "john.doe@example.com", 
+  "phone": "+41333333333", 
+  "company": "ABC Ltd" 
+} 
 
-The workflow was tested using both cURL and n8n's Webhook Test URL.
+``` 
+--- 
 
-Example cURL request:
+## Testing Performed 
 
-```bash
-curl -X POST http://localhost:5678/webhook-test/lead \
--H "Content-Type: application/json" \
--d '{
-  "first_name":"John",
-  "surname":"Doe",
-  "email":"john.doe@example.com",
-  "phone":"+41-333-333-333",
-  "company":"ABC Ltd"
-}'
-```
+| Test Case | Expected Result | Status | 
+|------------|----------------|---------| 
+| Valid lead submission | Lead saved successfully | ✅ Pass | 
+| Missing email | Validation error returned | ✅ Pass | 
+| Missing first_name | Validation error returned | ✅ Pass | 
+| Missing company | Validation error returned | ✅ Pass | 
+| Invalid email format | Lead rejected | ✅ Pass | 
+| Duplicate email | Duplicate response returned | ✅ Pass | 
+| New unique email | Lead saved to sheet | ✅ Pass | 
+| Optional phone omitted | Lead accepted | ✅ Pass | 
+| Optional surname omitted | Lead accepted | ✅ Pass | 
 
-The request successfully triggered the workflow and returned the expected response.
+--- 
 
----
+## Testing Method 
 
-## Workflow Screenshot
+The workflow was tested using: 
 
-![Workflow](../media/webhook-lead-formatter.png)
+- n8n Test Webhook URL 
+- HTTP POST requests 
+- Sample JSON payloads 
 
----
+Example: 
 
-## Demo Video
+```bash 
+curl -X POST http://localhost:5678/webhook-test/lead \ 
+-H "Content-Type: application/json" \ 
+-d '{ 
+  "first_name":"John", 
+  "surname":"Doe", 
+  "email":"john.doe@example.com", 
+  "phone":"+41-333-333-333", 
+  "company":"ABC Ltd" 
+}' 
 
-Recorded walkthrough:
+``` 
+--- 
+ 
+## Outcome 
 
-![Workflow](../media/webhook-lead-formatter.mov)
+The workflow successfully: 
 
----
+- Receives lead data through a webhook. 
+- Standardises incoming data. 
+- Validates required fields. 
+- Performs email format validation. 
+- Prevents duplicate lead creation. 
+- Stores valid leads in Google Sheets. 
+- Returns structured API responses. 
 
-## Outcome
-
-The workflow successfully receives lead information via a webhook endpoint, transforms incoming data into a consistent structure, validates business-critical fields, and returns structured success or error responses.
-
-This project demonstrates practical use of:
-
-- Webhooks
-- HTTP POST requests
-- Data transformation
-- Field mapping
-- Conditional logic
-- Validation
-- Error handling
-- API responses
-- Workflow documentation
-
-It provides a foundation for more advanced CRM and lead-processing automations.
+This project demonstrates a practical lead capture and validation workflow that can serve as a foundation for CRM and sales automation solutions. 
